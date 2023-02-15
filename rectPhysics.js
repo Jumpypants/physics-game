@@ -275,8 +275,8 @@ function collisionForAxis(axis, objI, objJ, rectI, rectJ) {
     }
 }
 
-class RectObject {
-    constructor(moving, solid) {
+class RectObject{
+    constructor(moving, solid){
         this.pos = { x: 0, y: 0 };
         this.size = { w: 0, h: 0 };
         this.vel = { x: 0, y: 0 };
@@ -290,7 +290,7 @@ class RectObject {
         this.groundFriction = 0.03;
         this.collision = { up: false, down: false, left: false, right: false };
     }
-    drawFunct() {}
-    collisionFunct() {}
-    tickFunct() {}
+    drawFunct(){}
+    collisionFunct(obj){}
+    tickFunct(){}
 }
