@@ -26,6 +26,7 @@ class Player extends RectObject{
     this.walkSize = new V2(40, 65);
     this.slideSize = new V2(65, 40);
     this.slideVel = 1;
+    this.wallRunVel = new V2(0.3, -2);
 
     this.airJumps = 0;
     this.airJumpCooldown = 0;
@@ -88,6 +89,11 @@ class Player extends RectObject{
           this.animation = new Animation(new V2(65, 40), 3, true, Infinity);
           this.image = document.getElementById("playerSlideRight");
         }
+        break;
+      default:
+        this.animation = new Animation(new V2(40, 65), 4, true, 1);
+        this.animationState = "runRight";
+        this.image = document.getElementById("playerRunRight");
     }
     this.animation.nextFrame();
     this.imageSection = this.animation.returnImageSection();
@@ -97,6 +103,14 @@ class Player extends RectObject{
 class Block extends RectObject{
   constructor(pos, size){
     super(false, true);
+    this.pos = pos;
+    this.size = size;
+  }
+}
+
+class Wall extends RectObject{
+  constructor(pos, size){
+    super(false, false);
     this.pos = pos;
     this.size = size;
   }

@@ -43,7 +43,7 @@ class Scene {
                         obj.size.h * scale.h);
                 }
             } else {
-                context.fillStyle = "black";
+                context.fillStyle = "gray";
                 context.fillRect((obj.pos.x - obj.size.w / 2) * scale.w + center.x,
                     (obj.pos.y - obj.size.h / 2) * scale.h + center.y,
                     obj.size.w * scale.w,
@@ -79,15 +79,17 @@ class Scene {
             //move object
             obj.pos.x += obj.vel.x;
         }
-
+        //reset collision
+        for (var i = 0; i < this.solidObjects.length; i++) {
+            var obj = this.objects[this.solidObjects[i]];
+            obj.collision = {up: false, down: false, left: false, right: false};
+        }
         //collision
         for (var i = 0; i < this.solidObjects.length; i++) {
             var objI = this.objects[this.solidObjects[i]];
-            objI.collision = {up: false, down: false, left: false, right: false};
             var rectI = createRect(objI.pos, objI.size);
             for (var j = i + 1; j < this.solidObjects.length; j++) {
                 var objJ = this.objects[this.solidObjects[j]];
-                objJ.collision = {up: false, down: false, left: false, right: false};
                 var rectJ = createRect(objJ.pos, objJ.size);
 
                 if (!objI.moving && !objJ.moving) {

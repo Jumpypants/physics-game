@@ -6,16 +6,22 @@ function loop(){
 
 function addObjects() {
   scene.clear();
-  scene.add(player);
   for(var i = 0; i < blocks.length; i++){
     scene.add(blocks[i]);
   }
+  for(var i = 0; i < walls.length; i++){
+    scene.add(walls[i]);
+  }
+  scene.add(player);
 }
 
 function playerController(p){
   p.airJumpCooldown--;
   //on the ground
   if(p.collision.down){
+    if(p.state != "sliding"){
+      p.state = "walking";
+    }
     p.airJumpCooldown = p.airJumpCooldownMax;
     p.airJumps = p.airJumpsMax;
     //walk
@@ -32,8 +38,8 @@ function playerController(p){
       //slide
       if(buttons.down){
         if(p.state != "sliding"){
-          var slideDir = p.vel.x > 0 ? 1 : -1;
-          p.vel.x += p.slideVel * slideDir;
+          var dir = p.vel.x > 0 ? 1 : -1;
+          p.vel.x += p.slideVel * dir;
           p.pos.y += (p.walkSize.h - p.slideSize.h) / 2;
           p.state = "sliding";
         }
@@ -56,11 +62,21 @@ function playerController(p){
     }
   }
   if(!p.collision.up && !p.collision.down && !p.collision.left && !p.collision.right){
-    //air jump
-    if(buttons.up && p.airJumps > 0 && p.airJumpCooldown <= 0){
-      p.vel.y = p.airJumpVel;
-      p.airJumps--;
-      p.airJumpCooldown = p.airJumpCooldownMax;
+    //wall run
+    if(checkPlayerWallCollisions(p, walls) && buttons.up){
+      p.state = "walking";
+      var dir = p.vel.x > 0 ? 1 : -1;
+      p.vel.x += p.wallRunVel.x * dir;
+      p.vel.y = p.wallRunVel.y;
+      p.airJumps = p.airJumpsMax;
+    } else {
+      //air jump
+      p.state = "jumping";
+      if(buttons.up && p.airJumps > 0 && p.airJumpCooldown <= 0){
+        p.vel.y = p.airJumpVel;
+        p.airJumps--;
+        p.airJumpCooldown = p.airJumpCooldownMax;
+      }
     }
   }
   //size
@@ -71,5 +87,15 @@ function playerController(p){
     case "sliding":
       p.size = p.slideSize;
       break;
+    case "jumping":
+      p.size = p.walkSize;
+  }
+}
+
+function checkPlayerWallCollisions(p, w){
+  for(var i = 0; i < w.length; w++){
+    if(rectCollision(createRect(new V2(p.pos.x, p.pos.y + p.size.h - 1), new V2(p.size.w, 1)), createRect(w[i].pos, w[i].size))){
+      return true;
+    }
   }
 }
