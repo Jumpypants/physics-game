@@ -6,11 +6,15 @@ function loop(){
 
 function addObjects() {
   scene.clear();
-  for(var i = 0; i < blocks.length; i++){
-    scene.add(blocks[i]);
+  currentMap = {...maps[map]};
+  for(var i = 0; i < currentMap.blocks.length; i++){
+    scene.add(currentMap.blocks[i]);
   }
-  for(var i = 0; i < walls.length; i++){
-    scene.add(walls[i]);
+  for(var i = 0; i < currentMap.walls.length; i++){
+    scene.add(currentMap.walls[i]);
+  }
+  for(var i = 0; i < currentMap.enemies.length; i++){
+    scene.add(currentMap.enemies[i]);
   }
   scene.add(player);
 }
@@ -63,7 +67,7 @@ function playerController(p){
   }
   if(!p.collision.up && !p.collision.down && !p.collision.left && !p.collision.right){
     //wall run
-    if(checkPlayerWallCollisions(p, walls) && buttons.up){
+    if(checkPlayerWallCollisions(p, currentMap.walls) && buttons.up){
       p.state = "walking";
       var dir = p.vel.x > 0 ? 1 : -1;
       p.vel.x += p.wallRunVel.x * dir;
@@ -94,7 +98,7 @@ function playerController(p){
 
 function checkPlayerWallCollisions(p, w){
   for(var i = 0; i < w.length; w++){
-    if(rectCollision(createRect(new V2(p.pos.x, p.pos.y + p.size.h - 1), new V2(p.size.w, 1)), createRect(w[i].pos, w[i].size))){
+    if(rectCollision(createRect(new V2(p.pos.x, p.pos.y + p.size.h / 2 - 1), new V2(p.size.w, 1)), createRect(w[i].pos, w[i].size))){
       return true;
     }
   }

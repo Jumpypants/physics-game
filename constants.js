@@ -16,6 +16,7 @@ class Player extends RectObject{
     this.groundFriction = 0.3;
     this.airFriction = 0.05;
     this.bounceMultiplier = {x: 5, y: 0.1};
+    this.mass = 1;
 
     this.walkVel = 0.8;
     this.jumpVel = -20;
@@ -115,3 +116,23 @@ class Wall extends RectObject{
     this.size = size;
   }
 }
+
+class Enemy extends RectObject{
+  constructor(pos){
+    super(true, true);
+    this.pos = pos;
+    this.size = new V2(40, 40);
+    this.airFriction = 0.1;
+    this.bounceMultiplier = {x: 0.1, y: 0.1};
+    this.mass = 1;
+  }
+}
+
+const maps = [{
+  blocks: [new Block(new V2(1000, 250), new V2(3000, 50)),
+          new Block(new V2(-450, 0), new V2(100, 600)),
+          new Block(new V2(450, -130), new V2(100, 600)),
+          new Block(new V2(-250, -300), new V2(50, 600))],
+  walls: [new Wall(new V2(1200, -100), new V2(1000, 400))],
+  enemies: [new Enemy(new V2(100, 200))]
+}];
