@@ -56,13 +56,13 @@ function playerController(p){
   if(p.collision.left){
     //wall jump
     if(!p.collision.down){
-      p.vel.y += p.wallJumpVel;
+      p.vel.y = p.wallJumpVel;
     }
   }
   if(p.collision.right){
     //wall jump
     if(!p.collision.down){
-      p.vel.y += p.wallJumpVel;
+      p.vel.y = p.wallJumpVel;
     }
   }
   if(!p.collision.up && !p.collision.down && !p.collision.left && !p.collision.right){

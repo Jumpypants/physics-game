@@ -20,7 +20,7 @@ class Player extends RectObject{
 
     this.walkVel = 0.8;
     this.jumpVel = -20;
-    this.wallJumpVel = -15;
+    this.wallJumpVel = -25;
     this.airJumpVel = -20;
     this.airJumpsMax = 1;
     this.airJumpCooldownMax = 15;

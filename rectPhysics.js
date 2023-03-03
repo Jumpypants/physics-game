@@ -110,7 +110,7 @@ class Scene {
                             objJ.pos.x += collisionDir * this.correctionMultiplier;
                         } else if (objI.moving) {
                             objI.pos.x -= collisionDir * this.correctionMultiplier;
-                        } else if (objJ.moving) {
+                        } else {
                             objJ.pos.x += collisionDir * this.correctionMultiplier;
                         }
                     }
