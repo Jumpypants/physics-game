@@ -16,11 +16,13 @@ class Scene {
             this.movingObjects.push(this.objects.length - 1);
         }
     }
+
     clear() {
         this.objects = [];
         this.solidObjects = [];
         this.movingObjects = [];
     }
+
     draw(center, scale, context) {
         for (var i = 0; i < this.objects.length; i++) {
             var obj = this.objects[i];
@@ -52,171 +54,189 @@ class Scene {
             obj.drawFunct();
         }
     }
-    update(gravity) {
-        //x
-        for(var i = 0; i < this.movingObjects.length; i++) {
-            var obj = this.objects[this.movingObjects[i]];
-            //apply air friction
-            if (obj.vel.x > obj.airFriction) {
-                obj.vel.x -= obj.airFriction;
-            } else if (obj.vel.x < -obj.airFriction) {
-                obj.vel.x += obj.airFriction;
-            } else {
-                obj.vel.x = 0;
-            }
 
-            //apply ground friction
-            if (obj.collision.down) {
-                if (obj.vel.x > obj.groundFriction) {
-                    obj.vel.x -= obj.groundFriction;
-                } else if (obj.vel.x < -obj.groundFriction) {
-                    obj.vel.x += obj.groundFriction;
-                } else {
-                    obj.vel.x = 0;
-                }
-            }
+    onFrame(timeSinceLastFrame) {
+        // Update all object velocities according to accelerations.
+        this.updateVel(timeSinceLastFrame);
 
-            //move object
-            obj.pos.x += obj.vel.x;
+        // Update positions according to velocities. Do this piecewise according
+        // to collisions.
+        var remainingTime = timeSinceLastFrame;
+
+        while (remainingTime > 0) {
+            console.log("remainingTime: ", remainingTime);
+            // Returns an object of collisions between pairs of solid objects.
+            // All those collisions are guaranteed to happen at the same time,
+            // which is within the provided duration.
+            var collisions = this.calculateEarliestCollisions(remainingTime);
+
+            // Update positions of objects according to their velocities,
+            // assuming no acceleration and no collisions (constant velocities).
+            this.updatePosNoCollision(collisions.time);
+
+            // Update velocities of colliding objects.
+            this.updateCollisions(collisions.collisions);
+    
+            remainingTime -= collisions.time;
         }
-        //reset collision
-        for (var i = 0; i < this.solidObjects.length; i++) {
+        console.log("frame done");
+    }
+
+    updateVel(timeSinceLastFrame){
+        for(var i = 0; i < this.movingObjects.length; i++){
+            var obj = this.objects[this.movingObjects[i]];
+            //gravity
+            obj.vel.y += obj.gravity * timeSinceLastFrame;
+        }
+    }
+
+    resetCollisions(){
+        for(var i = 0; i < this.solidObjects.length; i++){
             var obj = this.objects[this.solidObjects[i]];
             obj.collision = {up: false, down: false, left: false, right: false};
+            obj.collisions = [];
         }
-        //collision
-        for (var i = 0; i < this.solidObjects.length; i++) {
-            var objI = this.objects[this.solidObjects[i]];
-            var rectI = createRect(objI.pos, objI.size);
-            for (var j = i + 1; j < this.solidObjects.length; j++) {
-                var objJ = this.objects[this.solidObjects[j]];
-                var rectJ = createRect(objJ.pos, objJ.size);
+    }
 
-                if (!objI.moving && !objJ.moving) {
-                    continue;
-                }
-                if (collisionForAxis("x", objI, objJ, rectI, rectJ)) {
-                    var max = this.maxCorrection;
-                    //1 means object i is on the left, -1 that object j is on the left.
-                    var collisionDir = objI.pos.x < objJ.pos.x ? 1 : -1;
-                    var collided = false;
-                    while (rectCollision(rectI, rectJ) && max > 0) {
-                        collided = true;
-                        max--;
-                        rectI = createRect(objI.pos, objI.size);
-                        rectJ = createRect(objJ.pos, objJ.size);
-                        if (objI.moving && objJ.moving) {
-                            objI.pos.x -= collisionDir * this.correctionMultiplier;
-                            objJ.pos.x += collisionDir * this.correctionMultiplier;
-                        } else if (objI.moving) {
-                            objI.pos.x -= collisionDir * this.correctionMultiplier;
-                        } else {
-                            objJ.pos.x += collisionDir * this.correctionMultiplier;
-                        }
-                    }
-                    if(collided){
-                        if (objI.pos.x < objJ.pos.x) {
-                            objI.collision.right = true;
-                            objJ.collision.left = true;
-                        } else {
-                            objI.collision.left = true;
-                            objJ.collision.right = true;
-                        }
-                    }
-                }
-            }
-        }
-        //y
-        for (var i = 0; i < this.movingObjects.length; i++) {
+    updatePosNoCollision(time){
+        for(var i = 0; i < this.movingObjects.length; i++){
             var obj = this.objects[this.movingObjects[i]];
-            //apply gravity
-            obj.vel.y += gravity;
-            //apply air friction
-            if (obj.vel.y > obj.airFriction) {
-                obj.vel.y -= obj.airFriction;
-            } else if (obj.vel.y < -obj.airFriction) {
-                obj.vel.y += obj.airFriction;
-            } else {
-                obj.vel.y = 0;
-            }
-            //move object
-            obj.pos.y += obj.vel.y;
+            obj.pos.x += obj.vel.x * time;
+            obj.pos.y += obj.vel.y * time;
         }
+    }
 
-        //collision
-        for (var i = 0; i < this.solidObjects.length; i++) {
+    // Returns an object describing the earliest collision or collisions
+    // that happen between pairs of objects within the given duration.
+    // of collisions between pairs of objects.
+    //
+    // This object has the following fields:
+    // - time:
+    //   The time until the collisions occur. If no collisions occur
+    //   within the specified time, this field will be equal to the
+    //   duration argument.
+    // - collisions:
+    //   An array of objects, each representing a future collision between
+    //   a pair of objects, happening at the given time.
+    //   These objects have two fields:
+    //   - first: The first object involved in the collision. 
+    //   - second: The second object involved in the collision.
+    //   - axis: The axis in which the collision accured.
+    //   In case there are no collisions within the given duration, this
+    //   array will be empty. 
+    calculateEarliestCollisions(duration) {
+        var collisions = { time: duration, collisions: [] };
+        for(var i = 0; i < this.solidObjects.length; i++){
             var objI = this.objects[this.solidObjects[i]];
-            var rectI = createRect(objI.pos, objI.size);
-            for (var j = i + 1; j < this.solidObjects.length; j++) {
+            for(var j = i + 1; j < this.solidObjects.length; j++){
                 var objJ = this.objects[this.solidObjects[j]];
-                var rectJ = createRect(objJ.pos, objJ.size);
 
-                if (!objI.moving && !objJ.moving) {
-                    continue;
-                }
-                collisionForAxis("y", objI, objJ, rectI, rectJ);
-                var max = this.maxCorrection;
-                //1 means object i is on the top, -1 that object j is on the top.
-                var collisionDir = objI.pos.y < objJ.pos.y ? 1 : -1;
-                var collided = false;
-                while (rectCollision(rectI, rectJ) && max > 0) {
-                    collided = true;
-                    max--;
-                    rectI = createRect(objI.pos, objI.size);
-                    rectJ = createRect(objJ.pos, objJ.size);
-                    if (objI.moving && objJ.moving) {
-                        objI.pos.y -= collisionDir * this.correctionMultiplier;
-                        objJ.pos.y += collisionDir * this.correctionMultiplier;
-                    } else if (objI.moving) {
-                        objI.pos.y -= collisionDir * this.correctionMultiplier;
-                    } else if (objJ.moving) {
-                        objJ.pos.y += collisionDir * this.correctionMultiplier;
+                var collision = this.calculateCollision(objI, objJ);
+                var timeToCollide = collision.time;
+                var axis = collision.axis;
+                if(timeToCollide <= collisions.time) {
+                    if (timeToCollide < collisions.time) {
+                        collisions.collisions = [];
+                        collisions.time = timeToCollide;
                     }
-                }
-
-                if(collided){
-                    if (objI.pos.y < objJ.pos.y) {
-                        objI.collision.down = true;
-                        objJ.collision.up = true;
-                    } else {
-                        objI.collision.up = true;
-                        objJ.collision.down = true;
-                    }
+                    collisions.collisions.push({first: objI, second: objJ, axis: axis});
                 }
             }
         }
-        for (var i = 0; i < this.objects.length; i++) {
-            this.objects[i].tickFunct();
+        return collisions;
+    }
+
+    calculateCollision(objI, objJ){
+        var relativePos = new V2(objI.pos.x - objJ.pos.x, objI.pos.y - objJ.pos.y);
+        var relativeVel = new V2(objJ.vel.x - objI.vel.x, objJ.vel.y - objI.vel.y);
+
+        var timeToXCollision = Infinity;
+        var timeToYCollision = Infinity;
+
+        var averageSize = new V2((objI.size.w + objJ.size.w) / 2, (objI.size.h + objJ.size.h) / 2);
+
+        //check potential collision on the x axis
+        if(Math.abs(relativePos.x) >= averageSize.w && relativeVel.x != 0 && Math.sign(relativePos.x) == Math.sign(relativeVel.x)){
+            var distToCollision = relativePos.x < 0 ? relativePos.x + averageSize.w : relativePos.x - averageSize.w;
+            var timeToCollide = distToCollision / relativeVel.x;
+            if(timeToCollide >= 0){
+                var posYAtCollision = relativePos.y + relativeVel.y * timeToCollide;
+                if(Math.abs(posYAtCollision) <= averageSize.h){
+                    timeToXCollision = timeToCollide;
+                }
+            }
         }
+        //check potential collision on the y axis
+        if(Math.abs(relativePos.y) >= averageSize.h && relativeVel.y != 0 && Math.sign(relativePos.y) == Math.sign(relativeVel.y)){
+            var distToCollision = relativePos.y < 0 ? relativePos.y + averageSize.h : relativePos.y - averageSize.h;
+            var timeToCollide = distToCollision / relativeVel.y;
+            if(timeToCollide >= 0){
+                var posXAtCollision = relativePos.x + relativeVel.x * timeToCollide;
+                if(Math.abs(posXAtCollision) <= averageSize.w){
+                    timeToYCollision = timeToCollide;
+                }
+            }
+        }
+
+        if(Math.min(timeToYCollision, timeToXCollision) == timeToYCollision){
+            return {time: timeToYCollision, axis: "y"};
+        } else {
+            return {time: timeToXCollision, axis: "x"};
+        }
+        
     }
-}
 
-function createRect(pos, size) {
-    return { x: pos.x, y: pos.y, w: size.w, h: size.h };
-}
+    updateCollisions(collisions){
+        for(var i = 0; i < collisions.length; i++){
+            var first = collisions[i].first;
+            var second = collisions[i].second;
+            var axis = collisions[i].axis;
+            this.collisionForAxis(axis, first, second);
 
-function rectCollision(r1, r2) {
-    if (r1.x + r1.w / 2 > r2.x - r2.w / 2 &&
-        r2.x + r2.w / 2 > r1.x - r1.w / 2 &&
-        r1.y + r1.h / 2 > r2.y - r2.h / 2 &&
-        r2.y + r2.h / 2 > r1.y - r1.h / 2) {
-        return true;
+            //find the direction of the collision,
+            //and update the collisions and collsion values of the objects.
+            if(axis == "x"){
+                if(first.pos.x < second.pos.x){
+                    console.log("+++first on left");
+                    first.collisions.push({obj: second, dir: "right"});
+                    second.collisions.push({obj: first, dir: "left"});
+
+                    first.collision.right = true;
+                    second.collision.left = true;
+                } else {
+                    console.log("+++first on right");
+                    first.collisions.push({obj: second, dir: "left"});
+                    second.collisions.push({obj: first, dir: "right"});
+
+                    first.collision.left = true;
+                    second.collision.Right = true;
+                }
+            } else if(axis == "y"){
+                if(first.pos.y < second.pos.y){
+                    console.log("+++first on top");
+                    first.collisions.push({obj: second, dir: "down"});
+                    second.collisions.push({obj: first, dir: "up"});
+
+                    first.collision.down = true;
+                    second.collision.up = true;
+                } else {
+                    console.log("+++first on bottom ");
+                    first.collisions.push({obj: second, dir: "up"});
+                    second.collisions.push({obj: first, dir: "down"});
+
+                    first.collision.up = true;
+                    second.collision.down = true;
+                }
+            }
+
+            //call the collision functions for the objects
+            first.collisionFunct(second);
+            second.collisionFunct(first);
+        }
+        console.log(player.collision);
     }
-    return false;
-}
 
-class V2 {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.w = x;
-        this.h = y;
-    }
-}
-
-function collisionForAxis(axis, objI, objJ, rectI, rectJ) {
-    //check for collision
-    if (rectCollision(rectI, rectJ)) {
+    collisionForAxis(axis, objI, objJ) {
         if (!objI.moving) {
             var elasticXI = 0;
             var elasticYI = 0;
@@ -267,16 +287,45 @@ function collisionForAxis(axis, objI, objJ, rectI, rectJ) {
             objJ.vel.y = k * elasticYJ + (1 - k) * plasticY;
             objI.vel.y = k * elasticYI + (1 - k) * plasticY;
         }
+    }
 
+    update() {
+        // Reset the collision and collisions values for all solid objects.
+        this.resetCollisions();
+        this.onFrame(1 / constants.fps);
+        this.callTickFuncts();
+    }
 
-        objI.collisionFunct(objJ);
-        objJ.collisionFunct(objI);
-        return true;
-    } else {
-        return false;
+    callTickFuncts(){
+        for(var i = 0; i < this.objects.length; i++){
+            this.objects[i].tickFunct();
+        }
     }
 }
 
+function createRect(pos, size) {
+    return { x: pos.x, y: pos.y, w: size.w, h: size.h };
+}
+
+function rectCollision(r1, r2) {
+    if (r1.x + r1.w / 2 > r2.x - r2.w / 2 &&
+        r2.x + r2.w / 2 > r1.x - r1.w / 2 &&
+        r1.y + r1.h / 2 > r2.y - r2.h / 2 &&
+        r2.y + r2.h / 2 > r1.y - r1.h / 2) {
+        return true;
+    }
+    return false;
+}
+
+class V2 {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.w = x;
+        this.h = y;
+    }
+}
+    
 class RectObject{
     constructor(moving, solid){
         this.pos = { x: 0, y: 0 };
@@ -290,9 +339,38 @@ class RectObject{
         this.mass = 1;
         this.airFriction = 0.03;
         this.groundFriction = 0.03;
-        this.collision = { up: false, down: false, left: false, right: false };
+        this.collision = { up: false, down: false, left: false, right: false};
+        this.collisions = [];
     }
     drawFunct(){}
     collisionFunct(obj){}
     tickFunct(){}
+}
+
+function force(obj, axis, force){
+    if(axis == "x"){
+        obj.vel.x += force;
+    } else if(axis == "y"){
+        obj.vel.y += force;
+    }
+}
+
+function friction(obj, axis, force){
+    if(axis == "x"){
+        if(obj.vel.x >= force){
+            obj.vel.x -= force;
+        } else if(obj.vel.x <= -force){
+            obj.vel.x += force;
+        } else {
+            obj.vel.x = 0;
+        }
+    } else if(axis == "y"){
+        if(obj.vel.y >= force){
+            obj.vel.y -= force;
+        } else if(obj.vel.y <= -force){
+            obj.vel.y += force;
+        } else {
+            obj.vel.y = 0;
+        }
+    }
 }

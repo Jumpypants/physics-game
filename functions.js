@@ -1,6 +1,7 @@
 function loop(){
+  console.log("loop");
   addObjects();
-  scene.update(1);
+  scene.update();
   draw();
 }
 
@@ -13,13 +14,14 @@ function addObjects() {
   for(var i = 0; i < currentMap.walls.length; i++){
     scene.add(currentMap.walls[i]);
   }
-  for(var i = 0; i < currentMap.enemies.length; i++){
-    scene.add(currentMap.enemies[i]);
-  }
+  //for(var i = 0; i < currentMap.enemies.length; i++){
+  //  scene.add(currentMap.enemies[i]);
+  //}
   scene.add(player);
 }
 
 function playerController(p){
+  console.log("player controller for: ", p.state, p.collision);
   p.airJumpCooldown--;
   //on the ground
   if(p.collision.down){

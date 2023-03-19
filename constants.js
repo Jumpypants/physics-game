@@ -15,19 +15,20 @@ class Player extends RectObject{
     this.size = new V2(0, 0);
     this.groundFriction = 0.3;
     this.airFriction = 0.05;
-    this.bounceMultiplier = {x: 5, y: 0.1};
+    this.bounceMultiplier = {x: 5, y: 8};
     this.mass = 1;
+    this.gravity = 1600;
 
-    this.walkVel = 0.8;
-    this.jumpVel = -20;
-    this.wallJumpVel = -25;
-    this.airJumpVel = -20;
+    this.walkVel = 32;
+    this.jumpVel = -800;
+    this.wallJumpVel = -1000;
+    this.airJumpVel = -800;
     this.airJumpsMax = 1;
-    this.airJumpCooldownMax = 15;
+    this.airJumpCooldownMax = 0.375;
     this.walkSize = new V2(40, 65);
     this.slideSize = new V2(65, 40);
-    this.slideVel = 1;
-    this.wallRunVel = new V2(0.3, -2);
+    this.slideVel = 40;
+    this.wallRunVel = new V2(12, -80);
 
     this.airJumps = 0;
     this.airJumpCooldown = 0;
@@ -130,9 +131,9 @@ class Enemy extends RectObject{
 
 const maps = [{
   blocks: [new Block(new V2(1000, 250), new V2(3000, 50)),
-          new Block(new V2(-450, 0), new V2(100, 600)),
+          /*new Block(new V2(-450, 0), new V2(100, 600)),
           new Block(new V2(450, -130), new V2(100, 600)),
-          new Block(new V2(-250, -300), new V2(50, 600))],
-  walls: [new Wall(new V2(1200, -100), new V2(1000, 400))],
-  enemies: [new Enemy(new V2(100, 200))]
+          new Block(new V2(-250, -300), new V2(50, 600))*/],
+  walls: [/*new Wall(new V2(1200, -100), new V2(1000, 400))*/],
+  enemies: [/*new Enemy(new V2(100, 200))*/]
 }];
