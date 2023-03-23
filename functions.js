@@ -21,7 +21,6 @@ function addObjects() {
 }
 
 function playerController(p){
-  console.log("player controller for: ", p.state, p.collision);
   p.airJumpCooldown--;
   //on the ground
   if(p.collision.down){
@@ -40,19 +39,6 @@ function playerController(p){
     //jump
     if(buttons.up && p.state == "walking"){
       p.vel.y = p.jumpVel;
-    } else {
-      //slide
-      if(buttons.down){
-        if(p.state != "sliding"){
-          var dir = p.vel.x > 0 ? 1 : -1;
-          p.vel.x += p.slideVel * dir;
-          p.pos.y += (p.walkSize.h - p.slideSize.h) / 2;
-          p.state = "sliding";
-        }
-      } else if(p.state == "sliding"){
-        p.state = "walking";
-        p.pos.y -= (p.walkSize.h - p.slideSize.h) / 2;
-      }
     }
   }
   if(p.collision.left){

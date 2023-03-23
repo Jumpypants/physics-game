@@ -4,8 +4,7 @@ class Scene {
         this.solidObjects = [];
         this.movingObjects = [];
 
-        this.correctionMultiplier = 0.05;
-        this.maxCorrection = 100000;
+        this.minCleanVel = 0.05;
     }
     add(obj) {
         this.objects.push(obj);
@@ -59,6 +58,9 @@ class Scene {
         // Update all object velocities according to accelerations.
         this.updateVel(timeSinceLastFrame);
 
+        // Reset the collision and collisions values for all solid objects.
+        this.resetCollisions();
+
         // Update positions according to velocities. Do this piecewise according
         // to collisions.
         var remainingTime = timeSinceLastFrame;
@@ -86,7 +88,21 @@ class Scene {
         for(var i = 0; i < this.movingObjects.length; i++){
             var obj = this.objects[this.movingObjects[i]];
             //gravity
-            obj.vel.y += obj.gravity * timeSinceLastFrame;
+            force(obj, "y", obj.gravity);
+            //air friction
+            friction(obj, "x", obj.airFriction);
+            friction(obj, "y", obj.airFriction);
+            //ground friction
+            if(obj.collision.down){
+                friction(obj, "x", obj.groundFriction);
+            }
+            //clean up velocities
+            if(obj.vel.x < this.minCleanVel && obj.vel.x > -this.minCleanVel){
+                obj.vel.x = 0;
+            }
+            if(obj.vel.y < this.minCleanVel && obj.vel.y > -this.minCleanVel){
+                obj.vel.y = 0;
+            }
         }
     }
 
@@ -106,25 +122,25 @@ class Scene {
         }
     }
 
-    // Returns an object describing the earliest collision or collisions
-    // that happen between pairs of objects within the given duration.
-    // of collisions between pairs of objects.
-    //
-    // This object has the following fields:
-    // - time:
-    //   The time until the collisions occur. If no collisions occur
-    //   within the specified time, this field will be equal to the
-    //   duration argument.
-    // - collisions:
-    //   An array of objects, each representing a future collision between
-    //   a pair of objects, happening at the given time.
-    //   These objects have two fields:
-    //   - first: The first object involved in the collision. 
-    //   - second: The second object involved in the collision.
-    //   - axis: The axis in which the collision accured.
-    //   In case there are no collisions within the given duration, this
-    //   array will be empty. 
     calculateEarliestCollisions(duration) {
+        // Returns an object describing the earliest collision or collisions
+        // that happen between pairs of objects within the given duration.
+        // of collisions between pairs of objects.
+        //
+        // This object has the following fields:
+        // - time:
+        //   The time until the collisions occur. If no collisions occur
+        //   within the specified time, this field will be equal to the
+        //   duration argument.
+        // - collisions:
+        //   An array of objects, each representing a future collision between
+        //   a pair of objects, happening at the given time.
+        //   These objects have two fields:
+        //   - first: The first object involved in the collision. 
+        //   - second: The second object involved in the collision.
+        //   - axis: The axis in which the collision accured.
+        //   In case there are no collisions within the given duration, this
+        //   array will be empty. 
         var collisions = { time: duration, collisions: [] };
         for(var i = 0; i < this.solidObjects.length; i++){
             var objI = this.objects[this.solidObjects[i]];
@@ -220,7 +236,6 @@ class Scene {
                     first.collision.down = true;
                     second.collision.up = true;
                 } else {
-                    console.log("+++first on bottom ");
                     first.collisions.push({obj: second, dir: "up"});
                     second.collisions.push({obj: first, dir: "down"});
 
@@ -233,7 +248,6 @@ class Scene {
             first.collisionFunct(second);
             second.collisionFunct(first);
         }
-        console.log(player.collision);
     }
 
     collisionForAxis(axis, objI, objJ) {
@@ -290,8 +304,6 @@ class Scene {
     }
 
     update() {
-        // Reset the collision and collisions values for all solid objects.
-        this.resetCollisions();
         this.onFrame(1 / constants.fps);
         this.callTickFuncts();
     }
@@ -357,17 +369,17 @@ function force(obj, axis, force){
 
 function friction(obj, axis, force){
     if(axis == "x"){
-        if(obj.vel.x >= force){
+        if(obj.vel.x > force){
             obj.vel.x -= force;
-        } else if(obj.vel.x <= -force){
+        } else if(obj.vel.x < -force){
             obj.vel.x += force;
         } else {
             obj.vel.x = 0;
         }
     } else if(axis == "y"){
-        if(obj.vel.y >= force){
+        if(obj.vel.y > force){
             obj.vel.y -= force;
-        } else if(obj.vel.y <= -force){
+        } else if(obj.vel.y < -force){
             obj.vel.y += force;
         } else {
             obj.vel.y = 0;

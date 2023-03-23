@@ -13,11 +13,11 @@ class Player extends RectObject{
   constructor(){
     super(true, true);
     this.size = new V2(0, 0);
-    this.groundFriction = 0.3;
-    this.airFriction = 0.05;
-    this.bounceMultiplier = {x: 5, y: 8};
+    this.groundFriction = 10;
+    this.airFriction = 6;
+    this.bounceMultiplier = {x: 5, y: 5};
     this.mass = 1;
-    this.gravity = 1600;
+    this.gravity = 50;
 
     this.walkVel = 32;
     this.jumpVel = -800;
